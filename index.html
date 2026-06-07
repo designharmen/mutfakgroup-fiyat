@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Mutfak Group — Fiyat Listesi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy: #0a1628;
+  --steel: #1a3a5c;
+  --gold: #c9922a;
+  --gold-light: #e8b84b;
+  --cream: #f8f4ee;
+  --text: #1a2332;
+  --muted: #6b7c93;
+  --border: #dde4ed;
+  --white: #ffffff;
+  --red: #c0392b;
+  --green: #27ae60;
+  --radius: 10px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'Barlow',sans-serif;background:var(--cream);color:var(--text);min-height:100vh}
+button{font-family:'Barlow',sans-serif;cursor:pointer}
+
+/* ── LOADER ── */
+#loader{position:fixed;inset:0;background:var(--navy);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity .4s}
+#loader.out{opacity:0;pointer-events:none}
+.loader-logo{width:72px;height:72px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:22px;color:var(--navy);margin-bottom:20px}
+.loader-bar{width:160px;height:3px;background:rgba(255,255,255,.15);border-radius:2px;overflow:hidden;margin-top:16px}
+.loader-bar-inner{height:100%;background:var(--gold);border-radius:2px;animation:lbar 1.2s ease-in-out infinite}
+@keyframes lbar{0%{width:0;margin-left:0}50%{width:100%;margin-left:0}100%{width:0;margin-left:100%}}
+.loader-text{color:rgba(255,255,255,.5);font-size:13px;margin-top:10px;letter-spacing:.08em}
+
+/* ── LOGIN ── */
+#loginScreen{display:none;min-height:100vh;background:linear-gradient(150deg,var(--navy) 0%,#0f2444 60%,#1a3a5c 100%);align-items:center;justify-content:center;padding:20px;position:relative;overflow:hidden}
+#loginScreen::before{content:'';position:absolute;width:500px;height:500px;border-radius:50%;border:1px solid rgba(201,146,42,.1);top:-100px;right:-100px}
+#loginScreen::after{content:'';position:absolute;width:300px;height:300px;border-radius:50%;border:1px solid rgba(201,146,42,.08);bottom:-80px;left:-80px}
+.login-card{background:rgba(255,255,255,.04);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:2.5rem 2rem;width:100%;max-width:400px;text-align:center;position:relative;z-index:1}
+.login-logo{width:72px;height:72px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:22px;color:var(--navy);margin:0 auto 1.2rem;overflow:hidden;flex-shrink:0}
+.login-logo img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+.login-company{color:var(--white);font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;letter-spacing:.06em;margin-bottom:4px}
+.login-slogan{color:rgba(255,255,255,.4);font-size:12px;letter-spacing:.08em;margin-bottom:2rem}
+.login-input{width:100%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:12px 16px;color:var(--white);font-size:14px;font-family:'Barlow',sans-serif;outline:none;transition:border .2s;margin-bottom:6px}
+.login-input::placeholder{color:rgba(255,255,255,.25)}
+.login-input:focus{border-color:var(--gold)}
+.login-err{color:#ff6b6b;font-size:12px;min-height:18px;margin-bottom:10px}
+.btn-primary{width:100%;padding:13px;background:var(--gold);color:var(--navy);border:none;border-radius:10px;font-size:14px;font-weight:700;font-family:'Barlow',sans-serif;letter-spacing:.04em;transition:background .2s;margin-bottom:10px}
+.btn-primary:hover{background:var(--gold-light)}
+.btn-ghost{width:100%;padding:13px;background:transparent;color:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.15);border-radius:10px;font-size:14px;font-weight:500;font-family:'Barlow',sans-serif;transition:all .2s}
+.btn-ghost:hover{border-color:rgba(255,255,255,.4);color:var(--white)}
+.login-divider{display:flex;align-items:center;gap:10px;margin:12px 0;color:rgba(255,255,255,.2);font-size:12px}
+.login-divider::before,.login-divider::after{content:'';flex:1;height:1px;background:rgba(255,255,255,.1)}
+
+/* ── TOPBAR ── */
+#topbar{display:none;position:sticky;top:0;z-index:800;background:rgba(248,244,238,.95);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:8px 16px;align-items:center;gap:8px;flex-wrap:wrap}
+.tb-badge{padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase}
+.tb-badge.admin{background:var(--gold);color:var(--navy)}
+.tb-badge.cust{background:#dbeafe;color:#1e40af}
+.tb-spacer{flex:1}
+#saveStatus{font-size:11px;font-weight:500}
+.tb-btn{padding:5px 14px;border-radius:20px;font-size:11px;font-weight:600;background:transparent;border:1px solid var(--border);color:var(--muted);font-family:'Barlow',sans-serif;transition:all .15s;letter-spacing:.03em}
+.tb-btn:hover{background:var(--white);border-color:#aaa;color:var(--text)}
+.tb-btn.danger{border-color:#f0c0c0;color:var(--red)}
+.tb-btn.danger:hover{background:var(--red);color:var(--white);border-color:var(--red)}
+
+/* ── MAIN LAYOUT ── */
+#app{display:none;max-width:1200px;margin:0 auto;padding-bottom:5rem}
+
+/* ── HEADER ── */
+#plHeader{padding:2.5rem 1.5rem 2rem;position:relative;overflow:hidden}
+#plHeader::after{content:'';position:absolute;right:-80px;top:-80px;width:280px;height:280px;border-radius:50%;background:rgba(201,146,42,.07);pointer-events:none}
+.hdr-inner{position:relative;z-index:1}
+.hdr-top{display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem;flex-wrap:wrap}
+.hdr-logo{width:58px;height:58px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:18px;flex-shrink:0;overflow:hidden}
+.hdr-logo img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+.hdr-brand{}
+#plCompany{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;letter-spacing:.06em}
+#plSlogan{font-size:11px;letter-spacing:.1em;opacity:.55;text-transform:uppercase;margin-top:2px}
+#plTitle{font-family:'Barlow Condensed',sans-serif;font-size:clamp(28px,6vw,46px);font-weight:700;letter-spacing:.02em;line-height:1}
+#plTitle .yr{opacity:.45;font-weight:300}
+.hdr-meta{display:flex;gap:1.5rem;margin-top:1.2rem;padding-top:1.2rem;border-top:1px solid rgba(255,255,255,.15);flex-wrap:wrap}
+.hdr-mi{font-size:11px;opacity:.55;letter-spacing:.05em}
+.hdr-mi span{display:block;font-size:13px;font-weight:600;opacity:1;margin-bottom:1px}
+
+/* ── NOTE ── */
+#plNote{margin:0 1.5rem 1rem;background:var(--white);border-left:3px solid var(--gold);padding:.8rem 1.1rem;border-radius:0 8px 8px 0;font-size:13px;color:var(--muted);line-height:1.6}
+
+/* ── ADMIN PANEL ── */
+#adminPanel{display:none;background:var(--white);border:1px solid var(--border);border-radius:var(--radius);margin:0 1.5rem 1rem;overflow:hidden}
+.ap-tabs{display:flex;border-bottom:1px solid var(--border);background:#f8fafd;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.ap-tabs::-webkit-scrollbar{display:none}
+.ap-tab{padding:10px 18px;font-size:12px;font-weight:600;color:var(--muted);background:none;border:none;cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;letter-spacing:.03em;transition:all .15s}
+.ap-tab:hover{color:var(--text)}
+.ap-tab.active{color:var(--navy);border-bottom-color:var(--gold)}
+.ap-pane{display:none;padding:1.2rem 1.5rem}
+.ap-pane.active{display:block}
+.ap-row{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;margin-bottom:8px}
+.ap-g{display:flex;flex-direction:column;gap:3px}
+.ap-g label{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
+.ap-g input,.ap-g select,.ap-g textarea{padding:8px 10px;font-size:13px;border:1px solid var(--border);border-radius:7px;font-family:'Barlow',sans-serif;background:var(--white);color:var(--text);outline:none;transition:border .15s}
+.ap-g input:focus,.ap-g select:focus,.ap-g textarea:focus{border-color:var(--steel)}
+.ap-btn{padding:8px 18px;border-radius:7px;font-size:12px;font-weight:700;font-family:'Barlow',sans-serif;letter-spacing:.04em;border:none;transition:all .2s;white-space:nowrap}
+.ap-btn.primary{background:var(--navy);color:var(--white)}.ap-btn.primary:hover{background:var(--steel)}
+.ap-btn.gold{background:var(--gold);color:var(--navy)}.ap-btn.gold:hover{background:var(--gold-light)}
+.ap-btn.outline{background:transparent;color:var(--navy);border:1.5px solid var(--navy)}.ap-btn.outline:hover{background:var(--navy);color:var(--white)}
+.ap-btn.red{background:transparent;color:var(--red);border:1.5px solid #e0a0a0}.ap-btn.red:hover{background:var(--red);color:var(--white);border-color:var(--red)}
+.ap-hint{font-size:11px;color:var(--muted);margin-top:6px}
+.cfg-grid{display:grid;grid-template-columns:1fr 1fr;gap:0}
+@media(max-width:640px){.cfg-grid{grid-template-columns:1fr}}
+.cfg-col{padding:1.2rem 1.5rem;border-right:1px solid var(--border)}
+@media(max-width:640px){.cfg-col{border-right:none;border-bottom:1px solid var(--border)}}
+.cfg-col:last-child{border-right:none}
+.cfg-sec{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px}
+.logo-prev-row{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+#cfgLogoPrev{width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:17px;flex-shrink:0;overflow:hidden}
+#cfgLogoPrev img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+
+/* ── SEARCH ── */
+.searchbar{padding:.8rem 1.5rem;display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:var(--white);border-bottom:1px solid var(--border);position:sticky;top:49px;z-index:100}
+.search-inp{flex:1;min-width:180px;padding:8px 14px 8px 36px;font-size:13px;border:1px solid var(--border);border-radius:20px;background:var(--cream);color:var(--text);font-family:'Barlow',sans-serif;outline:none;transition:border .2s;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%236b7c93' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:12px center}
+.search-inp:focus{border-color:var(--steel);background-color:var(--white)}
+.flt-btn{padding:6px 14px;font-size:11px;font-weight:600;border:1px solid var(--border);border-radius:20px;background:var(--white);color:var(--muted);font-family:'Barlow',sans-serif;transition:all .15s;white-space:nowrap;letter-spacing:.03em}
+.flt-btn:hover{border-color:var(--steel);color:var(--navy)}
+.flt-btn.active{background:var(--navy);color:var(--white);border-color:var(--navy)}
+.match-lbl{font-size:12px;color:var(--muted);padding:.4rem 1.5rem .2rem}
+
+/* ── SECTION ── */
+.section{margin:0 1.5rem 1.2rem;background:var(--white);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden}
+.sec-head{display:flex;align-items:center;gap:8px;padding:10px 14px;background:#f8fafd;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:6px}
+.sec-num{background:var(--navy);color:var(--gold);font-family:'DM Mono',monospace;font-size:10px;font-weight:500;padding:2px 8px;border-radius:4px;letter-spacing:.08em;flex-shrink:0}
+.sec-titles{flex:1;display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;min-width:0}
+.sec-title{font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:var(--navy);letter-spacing:.03em}
+.sec-en{font-size:11px;color:var(--muted)}
+.sec-title-inp{font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:var(--navy);border:1px dashed #a0c0d8;border-radius:4px;padding:2px 8px;background:#f0f8ff;outline:none;min-width:160px;letter-spacing:.03em}
+.sec-title-inp:focus{border:1px solid var(--steel);background:var(--white)}
+.sec-en-inp{font-size:11px;color:var(--muted);border:1px dashed #c8d8e4;border-radius:4px;padding:2px 8px;background:#f7fafd;font-family:'Barlow',sans-serif;outline:none;min-width:120px}
+.sec-en-inp:focus{border:1px solid var(--steel);background:var(--white)}
+.sec-btns{display:flex;gap:4px;flex-shrink:0;align-items:center}
+.sec-mv{width:24px;height:24px;background:transparent;border:1px solid var(--border);border-radius:4px;color:var(--muted);font-size:12px;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.sec-mv:hover{background:var(--navy);color:var(--white);border-color:var(--navy)}
+.sec-del{padding:2px 8px;font-size:11px;font-weight:600;background:transparent;border:1px solid #e0a0a0;color:var(--red);border-radius:4px;font-family:'Barlow',sans-serif;transition:all .15s}
+.sec-del:hover{background:var(--red);color:var(--white);border-color:var(--red)}
+.grp-sel{font-size:11px;border:1px dashed #a0c0d8;border-radius:4px;padding:3px 6px;background:#f0f8ff;color:#444;font-family:'Barlow',sans-serif;outline:none}
+.grp-sel:focus{border:1px solid var(--steel)}
+
+/* ── TABLE ── */
+.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:360px}
+thead tr{background:var(--navy)}
+thead th{padding:8px 12px;text-align:left;color:rgba(255,255,255,.6);font-weight:600;font-size:10px;letter-spacing:.1em;text-transform:uppercase;white-space:nowrap;font-family:'Barlow',sans-serif}
+thead th.th-r{text-align:right}
+thead th.th-c{text-align:center;width:90px}
+tbody tr{border-bottom:.5px solid #edf0f4;transition:background .1s}
+tbody tr:nth-child(even){background:#fafbfc}
+tbody tr:hover{background:#f0f5ff}
+td{padding:8px 12px;vertical-align:middle}
+.td-name{font-weight:600;color:var(--navy)}
+.td-spec{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)}
+.td-price{text-align:right}
+.price-inp{width:110px;text-align:right;padding:5px 8px;font-size:13px;font-family:'DM Mono',monospace;border:1px solid var(--border);border-radius:6px;background:var(--white);color:var(--steel);font-weight:500;transition:all .15s}
+.price-inp:focus{outline:none;border-color:var(--steel);box-shadow:0 0 0 3px rgba(26,58,92,.09)}
+.price-inp.saved{border-color:var(--green)!important;box-shadow:0 0 0 3px rgba(39,174,96,.12)!important}
+.price-disp{font-family:'DM Mono',monospace;font-size:13px;color:var(--steel);font-weight:600}
+.price-disp.empty{color:#ccc;font-weight:400;font-size:12px}
+.td-act{text-align:center;padding:4px 6px;white-space:nowrap}
+.row-btns{display:flex;gap:2px;justify-content:center}
+.rb{width:22px;height:22px;background:transparent;border:1px solid var(--border);border-radius:4px;font-size:11px;display:flex;align-items:center;justify-content:center;color:var(--muted);transition:all .15s;font-family:'DM Mono',monospace;padding:0}
+.rb:hover{background:var(--navy);color:var(--white);border-color:var(--navy)}
+.rb.del:hover{background:var(--red);color:var(--white);border-color:var(--red)}
+.rb.dup:hover{background:var(--green);color:var(--white);border-color:var(--green)}
+.cell-inp{width:100%;padding:3px 6px;font-size:12px;border:1px dashed #a0c0d8;border-radius:3px;background:#f0f8ff;color:var(--text);font-family:'Barlow',sans-serif;outline:none}
+.cell-inp:focus{border:1px solid var(--steel);background:var(--white);box-shadow:0 0 0 2px rgba(26,58,92,.08)}
+.cell-inp.mono{font-family:'DM Mono',monospace;font-size:11px}
+
+/* ── FOOTER ── */
+.pl-footer{margin:2rem 1.5rem 0;padding-top:1.2rem;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px}
+.pf-l,.pf-r{font-size:12px;color:var(--muted);line-height:1.8}
+.pf-l strong{color:var(--text);font-size:13px;font-weight:700}
+.pf-r{text-align:right}
+#lastUpdate{font-size:11px;color:#ccc;text-align:right;padding:.5rem 1.5rem}
+
+/* ── TOAST ── */
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(12px);background:var(--navy);color:var(--white);padding:10px 20px;border-radius:20px;font-size:13px;font-weight:500;z-index:9000;opacity:0;transition:all .25s;pointer-events:none;white-space:nowrap;border:1px solid rgba(255,255,255,.1)}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ── PRINT ── */
+@media print{
+  #topbar,#adminPanel,.searchbar,.row-btns,.sec-btns,.sec-del,.cell-inp,.grp-sel,.price-inp,.sec-title-inp,.sec-en-inp,#loader,#loginScreen{display:none!important}
+  body{background:#fff}
+  #app{max-width:100%;padding:0}
+  .section{border:none;border-radius:0;margin:0 0 1rem;page-break-inside:avoid}
+  #plHeader{padding:1rem 0}
+}
+
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+
+<!-- LOADER -->
+<div id="loader">
+  <div class="loader-logo" id="loaderLogo">MG</div>
+  <div class="loader-text">Yükleniyor...</div>
+  <div class="loader-bar"><div class="loader-bar-inner"></div></div>
+</div>
+
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-logo" id="loginLogo">MG</div>
+    <div class="login-company" id="loginCompany">MUTFAK GROUP</div>
+    <div class="login-slogan" id="loginSlogan">Endüstriyel Mutfak · İnşaat · İthalat İhracat</div>
+    <input class="login-input" type="password" id="pwInput" placeholder="Admin şifresi..." onkeydown="if(event.key==='Enter')tryAdmin()">
+    <div class="login-err" id="loginErr"></div>
+    <button class="btn-primary" onclick="tryAdmin()">⚙ Admin Girişi</button>
+    <div class="login-divider">veya</div>
+    <button class="btn-ghost" onclick="launchCustomer()">Fiyat Listesini Görüntüle →</button>
+  </div>
+</div>
+
+<!-- TOPBAR -->
+<div id="topbar">
+  <span class="tb-badge" id="modeLbl"></span>
+  <span id="saveStatus" style="font-size:11px;font-weight:500"></span>
+  <div class="tb-spacer"></div>
+  <button class="tb-btn" onclick="window.print()">🖨 Yazdır</button>
+  <button class="tb-btn danger" onclick="logout()">Çıkış</button>
+</div>
+
+<!-- APP -->
+<div id="app">
+
+  <!-- HEADER -->
+  <div id="plHeader">
+    <div class="hdr-inner">
+      <div class="hdr-top">
+        <div class="hdr-logo" id="plLogo">MG</div>
+        <div class="hdr-brand">
+          <div id="plCompany">MUTFAK GROUP</div>
+          <div id="plSlogan">Endüstriyel Mutfak · İnşaat · İthalat İhracat</div>
+        </div>
+      </div>
+      <div id="plTitle">Ürün Fiyat Listesi <span class="yr" id="plYear">2026</span></div>
+      <div class="hdr-meta">
+        <div class="hdr-mi"><span id="plMetaWeb">mutfakgroup.com</span>Web</div>
+        <div class="hdr-mi"><span id="plMetaPhone">0212 485 99 09</span>Tel</div>
+        <div class="hdr-mi"><span id="plMetaContact">Mustafa Özdemir · 0532 272 99 39</span>İletişim</div>
+        <div class="hdr-mi"><span id="prodCount">—</span>Ürün</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NOTE -->
+  <div id="plNote"><span id="plNoteText">Fiyatlar KDV hariçtir. İstenilen ebatta üretim yapılır.</span></div>
+
+  <!-- ADMIN PANEL -->
+  <div id="adminPanel">
+    <div class="ap-tabs">
+      <button class="ap-tab active" onclick="apTab(this,'tabAdd')">➕ Ürün Ekle</button>
+      <button class="ap-tab" onclick="apTab(this,'tabCat')">📁 Kategori</button>
+      <button class="ap-tab" onclick="apTab(this,'tabBulk')">💲 Toplu Fiyat</button>
+      <button class="ap-tab" onclick="apTab(this,'tabCfg')">⚙ Sayfa Ayarları</button>
+    </div>
+
+    <!-- ÜRÜN EKLE -->
+    <div class="ap-pane active" id="tabAdd">
+      <div class="ap-row">
+        <div class="ap-g"><label>Kategori</label><select id="apSec" style="min-width:200px"></select></div>
+        <div class="ap-g"><label>Ürün Adı</label><input type="text" id="apName" placeholder="Ürün adı..."></div>
+        <div class="ap-g"><label>Ebat / Size</label><input type="text" id="apSize" placeholder="40×60×4 cm"></div>
+        <div class="ap-g"><label>Özellik</label><input type="text" id="apSpec" placeholder="Gramaj, kalınlık..."></div>
+        <div class="ap-g"><label>&nbsp;</label><button class="ap-btn primary" onclick="addProduct()">+ Ekle</button></div>
+      </div>
+    </div>
+
+    <!-- KATEGORİ -->
+    <div class="ap-pane" id="tabCat">
+      <div class="ap-row">
+        <div class="ap-g"><label>Adı (TR)</label><input type="text" id="catTR" placeholder="Alüminyum Pizza Tavaları" style="min-width:200px"></div>
+        <div class="ap-g"><label>Name (EN)</label><input type="text" id="catEN" placeholder="Aluminum Pizza Trays" style="min-width:200px"></div>
+        <div class="ap-g"><label>Grup</label>
+          <select id="catGrp">
+            <option value="alum">Alüminyum</option>
+            <option value="cutlery">Çatal-Kaşık-Bıçak</option>
+            <option value="trolley">Arabalar</option>
+            <option value="other">Diğer</option>
+          </select>
+        </div>
+        <div class="ap-g"><label>&nbsp;</label><button class="ap-btn outline" onclick="addCategory()">+ Kategori Ekle</button></div>
+      </div>
+    </div>
+
+    <!-- TOPLU FİYAT -->
+    <div class="ap-pane" id="tabBulk">
+      <div class="ap-row">
+        <div class="ap-g"><label>İşlem</label>
+          <select id="bulkOp" onchange="bulkOpChg()">
+            <option value="pct_inc">% Artır</option>
+            <option value="pct_dec">% Azalt</option>
+            <option value="fixed_inc">Sabit Artır</option>
+            <option value="fixed_dec">Sabit Azalt</option>
+            <option value="round">Yuvarla</option>
+            <option value="clear">Fiyatları Temizle</option>
+          </select>
+        </div>
+        <div class="ap-g" id="bulkValG"><label>Değer</label><input type="number" id="bulkVal" placeholder="10" style="width:80px"></div>
+        <div class="ap-g"><label>Kategori</label><select id="bulkSec"></select></div>
+        <div class="ap-g"><label>&nbsp;</label><button class="ap-btn gold" onclick="applyBulk()">Uygula</button></div>
+      </div>
+      <p class="ap-hint">Sadece dolu fiyat hücrelerine uygulanır.</p>
+    </div>
+
+    <!-- SAYFA AYARLARI -->
+    <div class="ap-pane" id="tabCfg">
+      <div class="cfg-grid">
+        <div class="cfg-col">
+          <p class="cfg-sec">🎨 Görsel & Marka</p>
+          <div class="logo-prev-row">
+            <div id="cfgLogoPrev"></div>
+            <div style="display:flex;flex-direction:column;gap:5px;flex:1">
+              <label style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">Logo Görseli</label>
+              <input type="file" id="cfgLogoFile" accept="image/*" onchange="cfgLogoUp(this)" style="font-size:12px">
+              <button onclick="cfgLogoClear()" style="font-size:11px;color:var(--red);background:none;border:none;cursor:pointer;text-align:left;padding:0;font-family:Barlow,sans-serif">✕ Görseli kaldır</button>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+            <div class="ap-g"><label>Logo Harfleri</label><input type="text" id="cfgLogoTxt" maxlength="3" oninput="cfgApply()"></div>
+            <div class="ap-g"><label>Logo Rengi</label><input type="color" id="cfgLogoClr" oninput="cfgApply()" style="height:34px;padding:2px 4px;width:100%"></div>
+          </div>
+          <div class="ap-g" style="margin-bottom:8px"><label>Firma Adı</label><input type="text" id="cfgCo" oninput="cfgApply()"></div>
+          <div class="ap-g" style="margin-bottom:8px"><label>Slogan</label><input type="text" id="cfgSlo" oninput="cfgApply()"></div>
+          <div style="display:grid;grid-template-columns:3fr 1fr;gap:8px;margin-bottom:8px">
+            <div class="ap-g"><label>Sayfa Başlığı</label><input type="text" id="cfgTitle" oninput="cfgApply()"></div>
+            <div class="ap-g"><label>Yıl</label><input type="text" id="cfgYear" maxlength="4" oninput="cfgApply()"></div>
+          </div>
+          <p class="cfg-sec" style="margin-top:12px">🎨 Header Arka Plan</p>
+          <div style="display:grid;grid-template-columns:1fr 1fr 70px;gap:8px">
+            <div class="ap-g"><label>Renk 1</label><input type="color" id="cfgC1" oninput="cfgApply()" style="height:34px;padding:2px 4px;width:100%"></div>
+            <div class="ap-g"><label>Renk 2</label><input type="color" id="cfgC2" oninput="cfgApply()" style="height:34px;padding:2px 4px;width:100%"></div>
+            <div class="ap-g"><label>Açı°</label><input type="number" id="cfgAng" min="0" max="360" oninput="cfgApply()" style="width:65px"></div>
+          </div>
+        </div>
+        <div class="cfg-col">
+          <p class="cfg-sec">📞 İletişim</p>
+          <div class="ap-g" style="margin-bottom:8px"><label>Web</label><input type="text" id="cfgWeb" oninput="cfgApply()"></div>
+          <div class="ap-g" style="margin-bottom:8px"><label>Telefon</label><input type="text" id="cfgPhone" oninput="cfgApply()"></div>
+          <div class="ap-g" style="margin-bottom:14px"><label>İletişim Kişisi</label><input type="text" id="cfgContact" oninput="cfgApply()"></div>
+          <p class="cfg-sec">📋 Not Metni</p>
+          <div class="ap-g" style="margin-bottom:14px"><textarea id="cfgNote" rows="3" oninput="cfgApply()" style="width:100%;resize:vertical"></textarea></div>
+          <p class="cfg-sec">🏢 Footer</p>
+          <div class="ap-g" style="margin-bottom:6px"><label>Marka</label><input type="text" id="cfgFBrand" oninput="cfgApply()"></div>
+          <div class="ap-g" style="margin-bottom:6px"><label>Adres</label><input type="text" id="cfgFAddr" oninput="cfgApply()"></div>
+          <div class="ap-g" style="margin-bottom:6px"><label>Web</label><input type="text" id="cfgFWeb" oninput="cfgApply()"></div>
+          <div class="ap-g" style="margin-bottom:6px"><label>İletişim</label><input type="text" id="cfgFCon" oninput="cfgApply()"></div>
+          <div class="ap-g" style="margin-bottom:14px"><label>Telefon</label><input type="text" id="cfgFPhone" oninput="cfgApply()"></div>
+          <p class="cfg-sec">🔑 Admin Şifresi</p>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px">
+            <div class="ap-g"><label>Mevcut</label><input type="password" id="pwOld" placeholder="••••"></div>
+            <div class="ap-g"><label>Yeni</label><input type="password" id="pwNew" placeholder="••••"></div>
+            <div class="ap-g"><label>Tekrar</label><input type="password" id="pwNew2" placeholder="••••"></div>
+          </div>
+          <button class="ap-btn outline" onclick="changePw()">Şifreyi Güncelle</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ARAMA -->
+  <div class="searchbar">
+    <input type="text" class="search-inp" id="searchBox" placeholder="Ürün adı veya ebat ara..." oninput="doSearch(this.value)">
+    <button class="flt-btn active" id="btnAll" onclick="filterGrp('all',this)">Tümü</button>
+    <button class="flt-btn" onclick="filterGrp('alum',this)">Alüminyum</button>
+    <button class="flt-btn" onclick="filterGrp('cutlery',this)">Çatal-Kaşık</button>
+    <button class="flt-btn" onclick="filterGrp('trolley',this)">Arabalar</button>
+  </div>
+  <div class="match-lbl" id="matchLbl"></div>
+
+  <div id="sections"></div>
+
+  <div class="pl-footer">
+    <div class="pf-l"><strong id="pfBrand">Mutfak Group</strong><br><span id="pfAddr">İkitelli O.S.B. / Başakşehir / İstanbul</span><br><span id="pfWeb">www.mutfakgroup.com</span></div>
+    <div class="pf-r"><span id="pfCon">Mustafa Özdemir: 0532 272 99 39</span><br><span id="pfPhone">Telefon: 0212 485 99 09</span></div>
+  </div>
+  <div id="lastUpdate"></div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+var SUPA_URL = 'https://bvkzfuwgjbjjoydvhyjl.supabase.co';
+var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2a3pmdXdnamJqam95ZHZoeWpsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4NTQxNjgsImV4cCI6MjA5NjQzMDE2OH0.QpcNXAhrSFqjCSam8ETrDSa2Msuydwnr-CQBZcTdl9g';
+var ADMIN_PW = 'mutfak2026';
+
+var isAdmin = false;
+var CFG = {};
+var products = [];
+var saveTimer = null;
+var secN = 0;
+
+// ── API ──────────────────────────────────────
+function api(path, opts) {
+  return fetch(SUPA_URL + '/rest/v1/' + path, Object.assign({
+    headers: {
+      'apikey': SUPA_KEY,
+      'Authorization': 'Bearer ' + SUPA_KEY,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=representation'
+    }
+  }, opts || {})).then(function(r) {
+    if (!r.ok) return r.text().then(function(t) { throw new Error(t); });
+    return r.status === 204 ? null : r.json();
+  });
+}
+
+function loadProducts() {
+  return api('products?select=*&order=category_order.asc,row_order.asc');
+}
+
+function loadConfig() {
+  return api('site_config?id=eq.1&select=config').then(function(d) {
+    return d && d[0] ? d[0].config : {};
+  });
+}
+
+function saveConfig(cfg) {
+  return api('site_config?id=eq.1', {
+    method: 'PATCH',
+    body: JSON.stringify({ config: cfg })
+  });
+}
+
+function upsertProduct(p) {
+  if (p.id) {
+    return api('products?id=eq.' + p.id, { method: 'PATCH', body: JSON.stringify(p) });
+  }
+  return api('products', { method: 'POST', body: JSON.stringify(p) });
+}
+
+function deleteProductDB(id) {
+  return api('products?id=eq.' + id, { method: 'DELETE' });
+}
+
+// ── INIT ─────────────────────────────────────
+window.addEventListener('load', function() {
+  Promise.all([loadProducts(), loadConfig()]).then(function(res) {
+    products = res[0] || [];
+    CFG = res[1] || {};
+    applyDefaults();
+    cfgRender();
+    hideLoader();
+  }).catch(function(e) {
+    console.error(e);
+    applyDefaults();
+    hideLoader();
+  });
+});
+
+function applyDefaults() {
+  var d = {
+    logoText:'MG', logoColor:'#c9922a', logoTextColor:'#0a1628', logoImg:'',
+    companyName:'MUTFAK GROUP', companySlogan:'Endüstriyel Mutfak · İnşaat · İthalat İhracat',
+    headerColor1:'#0a1628', headerColor2:'#1a3a5c', headerAngle:'150',
+    pageTitle:'Ürün Fiyat Listesi', pageYear:'2026',
+    noteText:'Fiyatlar KDV hariçtir. İstenilen ebatta üretim yapılır.',
+    footerBrand:'Mutfak Group', footerAddr:'İkitelli O.S.B. / Başakşehir / İstanbul',
+    footerWeb:'www.mutfakgroup.com', footerContact:'Mustafa Özdemir: 0532 272 99 39',
+    footerPhone:'Telefon: 0212 485 99 09', metaWeb:'mutfakgroup.com',
+    metaPhone:'0212 485 99 09', metaContact:'Mustafa Özdemir · 0532 272 99 39'
+  };
+  Object.keys(d).forEach(function(k) { if (CFG[k] === undefined) CFG[k] = d[k]; });
+  if (CFG.adminPw) ADMIN_PW = CFG.adminPw;
+}
+
+function hideLoader() {
+  var l = document.getElementById('loader');
+  l.classList.add('out');
+  setTimeout(function() { l.style.display = 'none'; }, 400);
+  document.getElementById('loginScreen').style.display = 'flex';
+}
+
+// ── AUTH ─────────────────────────────────────
+function tryAdmin() {
+  var v = document.getElementById('pwInput').value;
+  if (v === ADMIN_PW) {
+    isAdmin = true;
+    document.getElementById('loginScreen').style.display = 'none';
+    launchApp();
+  } else {
+    document.getElementById('loginErr').textContent = 'Hatalı şifre';
+    document.getElementById('pwInput').value = '';
+  }
+}
+function launchCustomer() {
+  isAdmin = false;
+  document.getElementById('loginScreen').style.display = 'none';
+  launchApp();
+}
+function launchApp() {
+  var lbl = document.getElementById('modeLbl');
+  if (isAdmin) {
+    lbl.textContent = 'Admin'; lbl.className = 'tb-badge admin';
+    document.getElementById('adminPanel').style.display = 'block';
+    cfgFill();
+  } else {
+    lbl.textContent = 'Müşteri Görünümü'; lbl.className = 'tb-badge cust';
+  }
+  document.getElementById('topbar').style.display = 'flex';
+  document.getElementById('app').style.display = 'block';
+  renderAll();
+  updateSelects();
+}
+function logout() { location.reload(); }
+
+// ── RENDER ───────────────────────────────────
+function renderAll() {
+  var cont = document.getElementById('sections');
+  cont.innerHTML = ''; secN = 0;
+  var groups = groupProducts(products);
+  groups.forEach(function(g) { renderSection(g, cont); });
+  document.getElementById('prodCount').textContent = products.length;
+}
+
+function groupProducts(prods) {
+  var map = {}, order = [];
+  prods.forEach(function(p) {
+    var k = p.category_id + '_' + p.category_name;
+    if (!map[k]) {
+      map[k] = { id: p.category_id, name: p.category_name, en: p.category_en, group: p.category_group, order: p.category_order, rows: [] };
+      order.push(k);
+    }
+    map[k].rows.push(p);
+  });
+  return order.map(function(k) { return map[k]; });
+}
+
+function renderSection(grp, container) {
+  secN++;
+  var wrap = mk('div', 'section');
+  wrap.id = 'GRP_' + grp.id;
+  wrap.dataset.group = grp.group;
+
+  var head = mk('div', 'sec-head');
+  var num = mk('span', 'sec-num');
+  num.textContent = 'P' + String(secN).padStart(2, '0');
+
+  var titDiv = mk('div', 'sec-titles');
+  if (isAdmin) {
+    var ti = mk('input', 'sec-title-inp'); ti.type = 'text'; ti.value = grp.name || '';
+    ti.oninput = function(e) {
+      var val = e.target.value;
+      grp.name = val;
+      products.filter(function(p) { return p.category_id === grp.id; }).forEach(function(p) { p.category_name = val; });
+      schedSave();
+    };
+    var te = mk('input', 'sec-en-inp'); te.type = 'text'; te.value = grp.en || '';
+    te.oninput = function(e) {
+      var val = e.target.value;
+      grp.en = val;
+      products.filter(function(p) { return p.category_id === grp.id; }).forEach(function(p) { p.category_en = val; });
+      schedSave();
+    };
+    titDiv.appendChild(ti); titDiv.appendChild(te);
+  } else {
+    titDiv.innerHTML = '<span class="sec-title">' + xe(grp.name) + '</span><span class="sec-en">' + xe(grp.en || '') + '</span>';
+  }
+
+  var btnDiv = mk('div', 'sec-btns');
+  if (isAdmin) {
+    var gs = mk('select', 'grp-sel');
+    [['alum','Alüminyum'],['cutlery','Çatal-Kaşık'],['trolley','Arabalar'],['other','Diğer']].forEach(function(pair) {
+      var o = document.createElement('option'); o.value = pair[0]; o.textContent = pair[1];
+      if (pair[0] === grp.group) o.selected = true; gs.appendChild(o);
+    });
+    gs.onchange = function(e) {
+      var val = e.target.value;
+      grp.group = val; wrap.dataset.group = val;
+      products.filter(function(p) { return p.category_id === grp.id; }).forEach(function(p) { p.category_group = val; });
+      schedSave();
+    };
+    var mu = mkBtn('sec-mv', '↑'); mu.onclick = function() { moveCat(grp.id, -1); };
+    var md = mkBtn('sec-mv', '↓'); md.onclick = function() { moveCat(grp.id, 1); };
+    var dl = mkBtn('sec-del', '✕ Sil'); dl.onclick = function() { deleteCat(grp.id); };
+    btnDiv.appendChild(gs); btnDiv.appendChild(mu); btnDiv.appendChild(md); btnDiv.appendChild(dl);
+  }
+
+  head.appendChild(num); head.appendChild(titDiv); head.appendChild(btnDiv);
+  wrap.appendChild(head);
+
+  var tw = mk('div', 'tbl-wrap');
+  var tbl = document.createElement('table');
+  var thead = document.createElement('thead'); var hr = document.createElement('tr');
+  ['Ürün / Product', 'Ebat / Size', 'Özellik', ''].forEach(function(c, i) {
+    var th = document.createElement('th');
+    if (i === 3) { th.className = 'th-r'; th.textContent = 'Fiyat / Price'; }
+    else { th.textContent = c; }
+    hr.appendChild(th);
+  });
+  if (isAdmin) { var thA = document.createElement('th'); thA.className = 'th-c'; hr.appendChild(thA); }
+  thead.appendChild(hr); tbl.appendChild(thead);
+
+  var tbody = document.createElement('tbody');
+  grp.rows.forEach(function(p) { tbody.appendChild(buildRow(p)); });
+  tbl.appendChild(tbody); tw.appendChild(tbl); wrap.appendChild(tw);
+  if (container) container.appendChild(wrap);
+}
+
+function buildRow(p) {
+  var tr = document.createElement('tr');
+  var fields = ['product_name', 'spec1', 'spec2'];
+  var search = [];
+
+  fields.forEach(function(f, ci) {
+    var td = document.createElement('td');
+    search.push((p[f] || '').toLowerCase());
+    if (isAdmin) {
+      td.style.padding = '4px 8px';
+      var inp = mk('input', ci === 0 ? 'cell-inp' : 'cell-inp mono');
+      inp.type = 'text'; inp.value = p[f] || ''; inp.placeholder = ['Ürün adı', 'Ebat', 'Özellik'][ci];
+      inp.oninput = function(e) { p[f] = e.target.value; schedSave(); };
+      td.appendChild(inp);
+    } else {
+      td.className = ci === 0 ? 'td-name' : 'td-spec';
+      td.textContent = p[f] || '';
+    }
+    tr.appendChild(td);
+  });
+
+  var tdP = mk('td', 'td-price');
+  if (isAdmin) {
+    var pi = mk('input', 'price-inp'); pi.type = 'text'; pi.placeholder = '₺'; pi.value = p.price || '';
+    pi.oninput = function(e) { p.price = e.target.value; schedSave(); };
+    pi.onchange = function(e) {
+      p.price = e.target.value;
+      var me = this; me.classList.add('saved'); setTimeout(function() { me.classList.remove('saved'); }, 1200);
+      saveSingle(p);
+    };
+    tdP.appendChild(pi);
+  } else {
+    var v = p.price || '';
+    var sp = mk('span', 'price-disp' + (v ? '' : ' empty'));
+    sp.textContent = v ? '₺ ' + v : '—'; tdP.appendChild(sp);
+  }
+  tr.appendChild(tdP);
+
+  if (isAdmin) {
+    var tdA = mk('td', 'td-act'); var bts = mk('div', 'row-btns');
+    var b1 = mkBtn('rb', '↑'); b1.onclick = function() { moveRow(p, -1); };
+    var b2 = mkBtn('rb', '↓'); b2.onclick = function() { moveRow(p, 1); };
+    var b3 = mkBtn('rb dup', '⧉'); b3.onclick = function() { dupRow(p); };
+    var b4 = mkBtn('rb del', '×'); b4.onclick = function() { deleteRow(p); };
+    bts.appendChild(b1); bts.appendChild(b2); bts.appendChild(b3); bts.appendChild(b4);
+    tdA.appendChild(bts); tr.appendChild(tdA);
+  }
+
+  tr.dataset.searchtext = search.join(' ');
+  tr.dataset.pid = p.id;
+  return tr;
+}
+
+// ── CRUD ─────────────────────────────────────
+function addProduct() {
+  var catId = parseInt(document.getElementById('apSec').value);
+  var name = document.getElementById('apName').value.trim();
+  var size = document.getElementById('apSize').value.trim();
+  var spec = document.getElementById('apSpec').value.trim();
+  if (!catId || !name) { toast('Kategori ve ürün adı gerekli'); return; }
+  var cat = products.find(function(p) { return p.category_id === catId; });
+  if (!cat) { toast('Kategori bulunamadı'); return; }
+  var maxOrder = products.filter(function(p) { return p.category_id === catId; }).reduce(function(m, p) { return Math.max(m, p.row_order || 0); }, 0);
+  var newProd = {
+    category_id: catId, category_name: cat.category_name, category_en: cat.category_en,
+    category_group: cat.category_group, category_order: cat.category_order,
+    product_name: name, spec1: size, spec2: spec, spec3: '', price: '', row_order: maxOrder + 1
+  };
+  upsertProduct(newProd).then(function(res) {
+    products.push(res[0]);
+    renderAll(); updateSelects();
+    document.getElementById('apName').value = '';
+    document.getElementById('apSize').value = '';
+    document.getElementById('apSpec').value = '';
+    toast('Ürün eklendi ✓');
+  }).catch(function() { toast('Hata oluştu'); });
+}
+
+function deleteRow(p) {
+  if (!confirm('"' + p.product_name + '" silinecek. Onaylıyor musunuz?')) return;
+  deleteProductDB(p.id).then(function() {
+    products = products.filter(function(x) { return x.id !== p.id; });
+    renderAll(); updateSelects(); toast('Silindi');
+  }).catch(function() { toast('Hata'); });
+}
+
+function dupRow(p) {
+  var copy = Object.assign({}, p);
+  delete copy.id; copy.price = ''; copy.row_order = (p.row_order || 0) + 1;
+  upsertProduct(copy).then(function(res) {
+    products.push(res[0]); renderAll(); updateSelects(); toast('Kopyalandı ✓');
+  }).catch(function() { toast('Hata'); });
+}
+
+function moveRow(p, dir) {
+  var catRows = products.filter(function(x) { return x.category_id === p.category_id; }).sort(function(a, b) { return a.row_order - b.row_order; });
+  var idx = catRows.findIndex(function(x) { return x.id === p.id; });
+  var ni = idx + dir;
+  if (ni < 0 || ni >= catRows.length) return;
+  var other = catRows[ni];
+  var tmp = p.row_order; p.row_order = other.row_order; other.row_order = tmp;
+  Promise.all([upsertProduct(p), upsertProduct(other)]).then(function() {
+    products.sort(function(a, b) { return a.category_order - b.category_order || a.row_order - b.row_order; });
+    renderAll();
+  }).catch(function() { toast('Hata'); });
+}
+
+function addCategory() {
+  var t = document.getElementById('catTR').value.trim();
+  var e = document.getElementById('catEN').value.trim();
+  var g = document.getElementById('catGrp').value;
+  if (!t) { toast('Kategori adı gerekli'); return; }
+  var maxCatId = products.reduce(function(m, p) { return Math.max(m, p.category_id || 0); }, 0);
+  var maxCatOrder = products.reduce(function(m, p) { return Math.max(m, p.category_order || 0); }, 0);
+  var dummy = {
+    category_id: maxCatId + 1, category_name: t, category_en: e || t,
+    category_group: g, category_order: maxCatOrder + 1,
+    product_name: '(Yeni ürün)', spec1: '', spec2: '', spec3: '', price: '', row_order: 1
+  };
+  upsertProduct(dummy).then(function(res) {
+    products.push(res[0]); renderAll(); updateSelects();
+    document.getElementById('catTR').value = '';
+    document.getElementById('catEN').value = '';
+    toast('Kategori eklendi ✓');
+  }).catch(function() { toast('Hata'); });
+}
+
+function deleteCat(catId) {
+  var rows = products.filter(function(p) { return p.category_id === catId; });
+  if (!confirm('Bu kategori ' + rows.length + ' ürünle birlikte silinecek. Onaylıyor musunuz?')) return;
+  Promise.all(rows.map(function(p) { return deleteProductDB(p.id); })).then(function() {
+    products = products.filter(function(p) { return p.category_id !== catId; });
+    renderAll(); updateSelects(); toast('Kategori silindi');
+  }).catch(function() { toast('Hata'); });
+}
+
+function moveCat(catId, dir) {
+  var groups = groupProducts(products);
+  var idx = groups.findIndex(function(g) { return g.id === catId; });
+  var ni = idx + dir;
+  if (ni < 0 || ni >= groups.length) return;
+  var g1 = groups[idx], g2 = groups[ni];
+  var t = g1.order; g1.order = g2.order; g2.order = t;
+  var updates = [];
+  products.filter(function(p) { return p.category_id === g1.id; }).forEach(function(p) { p.category_order = g1.order; updates.push(upsertProduct(p)); });
+  products.filter(function(p) { return p.category_id === g2.id; }).forEach(function(p) { p.category_order = g2.order; updates.push(upsertProduct(p)); });
+  Promise.all(updates).then(function() {
+    products.sort(function(a, b) { return a.category_order - b.category_order || a.row_order - b.row_order; });
+    renderAll();
+  }).catch(function() { toast('Hata'); });
+}
+
+// ── SAVE ─────────────────────────────────────
+function saveSingle(p) {
+  showSave('pending');
+  upsertProduct(p).then(function() { showSave('saved'); })
+    .catch(function() { showSave('err'); });
+}
+
+function schedSave() {
+  showSave('pending');
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(function() {
+    var updates = products.map(function(p) { return upsertProduct(p); });
+    Promise.all(updates).then(function() { showSave('saved'); document.getElementById('lastUpdate').textContent = 'Son güncelleme: ' + new Date().toLocaleString('tr-TR'); })
+      .catch(function() { showSave('err'); });
+  }, 1500);
+}
+
+function showSave(s) {
+  var el = document.getElementById('saveStatus');
+  if (s === 'pending') { el.style.color = '#f0a500'; el.textContent = '● Kaydediliyor...'; }
+  else if (s === 'saved') { el.style.color = '#27ae60'; el.textContent = '✓ Kaydedildi'; setTimeout(function() { el.textContent = ''; }, 3000); }
+  else { el.style.color = '#c0392b'; el.textContent = '⚠ Hata'; }
+}
+
+// ── BULK ─────────────────────────────────────
+function bulkOpChg() {
+  var op = document.getElementById('bulkOp').value;
+  document.getElementById('bulkValG').style.display = (op === 'round' || op === 'clear') ? 'none' : 'flex';
+}
+function applyBulk() {
+  var op = document.getElementById('bulkOp').value;
+  var val = parseFloat(document.getElementById('bulkVal').value) || 0;
+  var sid = document.getElementById('bulkSec').value;
+  var targets = sid === 'all' ? products : products.filter(function(p) { return p.category_id === parseInt(sid); });
+  var n = 0;
+  targets.forEach(function(p) {
+    if (op === 'clear') { p.price = ''; n++; return; }
+    var v = parseFloat(p.price); if (isNaN(v) || !p.price) return;
+    var nv = v;
+    if (op === 'pct_inc') nv = v * (1 + val / 100);
+    else if (op === 'pct_dec') nv = v * (1 - val / 100);
+    else if (op === 'fixed_inc') nv = v + val;
+    else if (op === 'fixed_dec') nv = v - val;
+    else if (op === 'round') nv = Math.round(v);
+    if (op !== 'round') nv = Math.round(nv * 100) / 100;
+    p.price = nv > 0 ? String(nv) : '0'; n++;
+  });
+  schedSave(); renderAll(); toast(n + ' fiyat güncellendi ✓');
+}
+
+// ── SEARCH/FILTER ────────────────────────────
+function filterGrp(group, btn) {
+  document.querySelectorAll('.flt-btn').forEach(function(b) { b.classList.remove('active'); });
+  if (btn) btn.classList.add('active');
+  document.querySelectorAll('.section').forEach(function(s) {
+    s.classList.toggle('hidden', group !== 'all' && s.dataset.group !== group);
+  });
+  document.getElementById('matchLbl').textContent = '';
+}
+function doSearch(q) {
+  var term = q.trim().toLowerCase();
+  if (!term) { filterGrp('all', document.getElementById('btnAll')); return; }
+  document.querySelectorAll('.flt-btn').forEach(function(b) { b.classList.remove('active'); });
+  var n = 0;
+  document.querySelectorAll('tbody tr').forEach(function(tr) {
+    var m = tr.dataset.searchtext && tr.dataset.searchtext.includes(term);
+    tr.classList.toggle('hidden', !m); if (m) n++;
+  });
+  document.querySelectorAll('.section').forEach(function(s) {
+    var vis = Array.from(s.querySelectorAll('tbody tr')).some(function(t) { return !t.classList.contains('hidden'); });
+    s.classList.toggle('hidden', !vis);
+  });
+  document.getElementById('matchLbl').textContent = n ? n + ' ürün bulundu' : 'Sonuç yok';
+}
+
+// ── HELPERS ──────────────────────────────────
+function updateSelects() {
+  var groups = groupProducts(products);
+  var opts = groups.map(function(g) { return '<option value="' + g.id + '">' + xe(g.name) + '</option>'; }).join('');
+  var el1 = document.getElementById('apSec'); if (el1) el1.innerHTML = opts;
+  var el2 = document.getElementById('bulkSec');
+  if (el2) el2.innerHTML = '<option value="all">Tüm Kategoriler</option>' + opts;
+}
+function apTab(btn, id) {
+  document.querySelectorAll('.ap-tab').forEach(function(b) { b.classList.remove('active'); });
+  document.querySelectorAll('.ap-pane').forEach(function(p) { p.classList.remove('active'); });
+  btn.classList.add('active'); document.getElementById(id).classList.add('active');
+}
+function mk(tag, cls) { var e = document.createElement(tag); if (cls) e.className = cls; return e; }
+function mkBtn(cls, txt) { var b = mk('button', cls); b.textContent = txt; return b; }
+function xe(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+function toast(msg) {
+  var t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._t); t._t = setTimeout(function() { t.classList.remove('show'); }, 2600);
+}
+
+// ── PASSWORD ─────────────────────────────────
+function changePw() {
+  var o = document.getElementById('pwOld').value;
+  var n1 = document.getElementById('pwNew').value;
+  var n2 = document.getElementById('pwNew2').value;
+  if (o !== ADMIN_PW) { toast('Mevcut şifre hatalı'); return; }
+  if (n1.length < 4) { toast('En az 4 karakter'); return; }
+  if (n1 !== n2) { toast('Şifreler eşleşmiyor'); return; }
+  ADMIN_PW = n1; CFG.adminPw = n1;
+  saveConfig(CFG).then(function() {
+    ['pwOld','pwNew','pwNew2'].forEach(function(id) { document.getElementById(id).value = ''; });
+    toast('Şifre güncellendi ✓');
+  });
+}
+
+// ── CONFIG ───────────────────────────────────
+function cfgRender() {
+  var c = CFG;
+  document.getElementById('plHeader').style.background =
+    'linear-gradient(' + (c.headerAngle||'150') + 'deg,' + (c.headerColor1||'#0a1628') + ' 0%,' + (c.headerColor2||'#1a3a5c') + ' 100%)';
+
+  function apLogo(el) {
+    if (!el) return;
+    el.style.background = c.logoColor || '#c9922a';
+    el.style.color = c.logoTextColor || '#0a1628';
+    if (c.logoImg) {
+      el.innerHTML = '<img src="' + c.logoImg + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%">';
+    } else {
+      el.textContent = c.logoText || 'MG';
+    }
+  }
+  apLogo(document.getElementById('plLogo'));
+  apLogo(document.getElementById('loginLogo'));
+  apLogo(document.getElementById('loaderLogo'));
+  apLogo(document.getElementById('cfgLogoPrev'));
+
+  function st(id, v) { var el = document.getElementById(id); if (el) el.textContent = v || ''; }
+  st('loginCompany', c.companyName); st('loginSlogan', c.companySlogan);
+  st('plCompany', c.companyName); st('plSlogan', c.companySlogan);
+  st('plYear', c.pageYear); st('plMetaWeb', c.metaWeb);
+  st('plMetaPhone', c.metaPhone); st('plMetaContact', c.metaContact);
+  st('plNoteText', c.noteText);
+  st('pfBrand', c.footerBrand); st('pfAddr', c.footerAddr);
+  st('pfWeb', c.footerWeb); st('pfCon', c.footerContact); st('pfPhone', c.footerPhone);
+
+  var pt = document.getElementById('plTitle');
+  if (pt) pt.innerHTML = xe(c.pageTitle || 'Ürün Fiyat Listesi') + ' <span class="yr" id="plYear">' + xe(c.pageYear || '2026') + '</span>';
+
+  // Header text color
+  var textClr = 'rgba(255,255,255,1)';
+  ['plCompany','plSlogan','plTitle','plMetaWeb','plMetaPhone','plMetaContact','prodCount'].forEach(function(id) {
+    var el = document.getElementById(id); if (el) el.style.color = textClr;
+  });
+  document.querySelectorAll('.hdr-mi').forEach(function(el) { el.style.color = 'rgba(255,255,255,0.55)'; });
+  document.querySelectorAll('.hdr-mi span').forEach(function(el) { el.style.color = 'rgba(255,255,255,0.9)'; });
+  var hmeta = document.querySelector('.hdr-meta'); if(hmeta) hmeta.style.borderTopColor = 'rgba(255,255,255,0.15)';
+}
+
+function cfgFill() {
+  var c = CFG;
+  function sv(id, v) { var el = document.getElementById(id); if (el) el.value = v || ''; }
+  sv('cfgLogoTxt', c.logoText); sv('cfgLogoClr', c.logoColor);
+  sv('cfgCo', c.companyName); sv('cfgSlo', c.companySlogan);
+  sv('cfgTitle', c.pageTitle); sv('cfgYear', c.pageYear);
+  sv('cfgC1', c.headerColor1); sv('cfgC2', c.headerColor2); sv('cfgAng', c.headerAngle);
+  sv('cfgWeb', c.metaWeb); sv('cfgPhone', c.metaPhone); sv('cfgContact', c.metaContact);
+  sv('cfgNote', c.noteText);
+  sv('cfgFBrand', c.footerBrand); sv('cfgFAddr', c.footerAddr); sv('cfgFWeb', c.footerWeb);
+  sv('cfgFCon', c.footerContact); sv('cfgFPhone', c.footerPhone);
+}
+
+function cfgApply() {
+  function gv(id) { var el = document.getElementById(id); return el ? el.value : ''; }
+  CFG.logoText = gv('cfgLogoTxt').toUpperCase(); CFG.logoColor = gv('cfgLogoClr');
+  CFG.companyName = gv('cfgCo'); CFG.companySlogan = gv('cfgSlo');
+  CFG.pageTitle = gv('cfgTitle'); CFG.pageYear = gv('cfgYear');
+  CFG.headerColor1 = gv('cfgC1'); CFG.headerColor2 = gv('cfgC2'); CFG.headerAngle = gv('cfgAng');
+  CFG.metaWeb = gv('cfgWeb'); CFG.metaPhone = gv('cfgPhone'); CFG.metaContact = gv('cfgContact');
+  CFG.noteText = gv('cfgNote');
+  CFG.footerBrand = gv('cfgFBrand'); CFG.footerAddr = gv('cfgFAddr'); CFG.footerWeb = gv('cfgFWeb');
+  CFG.footerContact = gv('cfgFCon'); CFG.footerPhone = gv('cfgFPhone');
+  cfgRender();
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(function() {
+    saveConfig(CFG).then(function() { showSave('saved'); }).catch(function() { showSave('err'); });
+  }, 1500);
+}
+
+function cfgLogoUp(input) {
+  var f = input.files[0]; if (!f) return;
+  var r = new FileReader();
+  r.onload = function(e) { CFG.logoImg = e.target.result; cfgRender(); cfgApply(); toast('Logo yüklendi ✓'); };
+  r.readAsDataURL(f);
+}
+function cfgLogoClear() {
+  CFG.logoImg = ''; var fi = document.getElementById('cfgLogoFile'); if (fi) fi.value = '';
+  cfgRender(); cfgApply(); toast('Logo kaldırıldı');
+}
+</script>
+</body>
+</html>
