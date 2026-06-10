@@ -694,25 +694,53 @@ function deleteRow(p) {
 }
 
 function dupRow(p) {
+  // Sort category rows by current order
+  var catRows = products.filter(function(x) { return x.category_id === p.category_id; })
+    .sort(function(a, b) { return a.row_order - b.row_order || a.id - b.id; });
+  var idx = catRows.findIndex(function(x) { return x.id === p.id; });
+  // Create copy object (no id so Supabase assigns new one)
   var copy = Object.assign({}, p);
-  delete copy.id; copy.price = ''; copy.row_order = (p.row_order || 0) + 1;
+  delete copy.id;
+  copy.price = '';
+  // Insert copy into array right after original
+  catRows.splice(idx + 1, 0, copy);
+  // Reassign sequential row_order for entire category
+  catRows.forEach(function(row, i) { row.row_order = i + 1; });
+  // Save copy to DB first to get its id, then bulk save all
   upsertProduct(copy).then(function(res) {
-    products.push(res[0]); renderAll(); updateSelects(); toast('Kopyalandı ✓');
+    // Replace the temp copy in products array with the DB version
+    copy.id = res[0].id;
+    // Add to global products array
+    products.push(copy);
+    // Re-sort and save all to persist row_order changes
+    products.sort(function(a, b) { return a.category_order - b.category_order || a.row_order - b.row_order; });
+    renderAll(); updateSelects();
+    schedSave();
+    toast('Kopyalandı ✓');
   }).catch(function() { toast('Hata'); });
 }
 
 function moveRow(p, dir) {
+  // Get category rows sorted by current order
   var catRows = products.filter(function(x) { return x.category_id === p.category_id; })
     .sort(function(a, b) { return a.row_order - b.row_order || a.id - b.id; });
   var idx = catRows.findIndex(function(x) { return x.id === p.id; });
   var ni = idx + dir;
   if (ni < 0 || ni >= catRows.length) return;
-  // Swap in array
-  var tmp = catRows[idx]; catRows[idx] = catRows[ni]; catRows[ni] = tmp;
-  // Reassign sequential row_order values
-  catRows.forEach(function(row, i) { row.row_order = i + 1; });
-  // Sort global products array
-  products.sort(function(a, b) { return a.category_order - b.category_order || a.row_order - b.row_order; });
+  // Swap positions in the sorted array
+  var tmp = catRows[idx];
+  catRows[idx] = catRows[ni];
+  catRows[ni] = tmp;
+  // Reassign clean sequential row_order (1,2,3...) to ALL rows in category
+  // This prevents any duplicate or equal values
+  catRows.forEach(function(row, i) {
+    row.row_order = (i + 1) * 10; // use multiples of 10 to avoid conflicts
+  });
+  // Re-sort the global products array
+  products.sort(function(a, b) {
+    if (a.category_order !== b.category_order) return a.category_order - b.category_order;
+    return a.row_order - b.row_order;
+  });
   renderAll();
   schedSave();
 }
