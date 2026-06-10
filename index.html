@@ -702,16 +702,19 @@ function dupRow(p) {
 }
 
 function moveRow(p, dir) {
-  var catRows = products.filter(function(x) { return x.category_id === p.category_id; }).sort(function(a, b) { return a.row_order - b.row_order; });
+  var catRows = products.filter(function(x) { return x.category_id === p.category_id; })
+    .sort(function(a, b) { return a.row_order - b.row_order || a.id - b.id; });
   var idx = catRows.findIndex(function(x) { return x.id === p.id; });
   var ni = idx + dir;
   if (ni < 0 || ni >= catRows.length) return;
-  var other = catRows[ni];
-  var tmp = p.row_order; p.row_order = other.row_order; other.row_order = tmp;
-  Promise.all([upsertProduct(p), upsertProduct(other)]).then(function() {
-    products.sort(function(a, b) { return a.category_order - b.category_order || a.row_order - b.row_order; });
-    renderAll();
-  }).catch(function() { toast('Hata'); });
+  // Swap in array
+  var tmp = catRows[idx]; catRows[idx] = catRows[ni]; catRows[ni] = tmp;
+  // Reassign sequential row_order values
+  catRows.forEach(function(row, i) { row.row_order = i + 1; });
+  // Sort global products array
+  products.sort(function(a, b) { return a.category_order - b.category_order || a.row_order - b.row_order; });
+  renderAll();
+  schedSave();
 }
 
 function addCategory() {
@@ -748,32 +751,52 @@ function moveCat(catId, dir) {
   var idx = groups.findIndex(function(g) { return g.id === catId; });
   var ni = idx + dir;
   if (ni < 0 || ni >= groups.length) return;
-  var g1 = groups[idx], g2 = groups[ni];
-  var t = g1.order; g1.order = g2.order; g2.order = t;
-  var updates = [];
-  products.filter(function(p) { return p.category_id === g1.id; }).forEach(function(p) { p.category_order = g1.order; updates.push(upsertProduct(p)); });
-  products.filter(function(p) { return p.category_id === g2.id; }).forEach(function(p) { p.category_order = g2.order; updates.push(upsertProduct(p)); });
-  Promise.all(updates).then(function() {
-    products.sort(function(a, b) { return a.category_order - b.category_order || a.row_order - b.row_order; });
-    renderAll();
-  }).catch(function() { toast('Hata'); });
+  // Swap in array
+  var tmp = groups[idx]; groups[idx] = groups[ni]; groups[ni] = tmp;
+  // Reassign sequential category_order values
+  groups.forEach(function(g, i) {
+    var newOrder = i + 1;
+    g.order = newOrder;
+    products.filter(function(p) { return p.category_id === g.id; }).forEach(function(p) { p.category_order = newOrder; });
+  });
+  products.sort(function(a, b) { return a.category_order - b.category_order || a.row_order - b.row_order; });
+  renderAll();
+  schedSave();
 }
 
 // ── SAVE ─────────────────────────────────────
 function saveSingle(p) {
   showSave('pending');
-  upsertProduct(p).then(function() { showSave('saved'); })
-    .catch(function() { showSave('err'); });
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(function() { bulkSave(); }, 800);
 }
 
 function schedSave() {
   showSave('pending');
   clearTimeout(saveTimer);
-  saveTimer = setTimeout(function() {
-    var updates = products.map(function(p) { return upsertProduct(p); });
-    Promise.all(updates).then(function() { showSave('saved'); document.getElementById('lastUpdate').textContent = 'Son güncelleme: ' + new Date().toLocaleString('tr-TR'); })
-      .catch(function() { showSave('err'); });
-  }, 1500);
+  saveTimer = setTimeout(function() { bulkSave(); }, 1500);
+}
+
+function bulkSave() {
+  if (!products.length) return;
+  // Single bulk upsert - all products in one request
+  fetch(SUPA_URL + '/rest/v1/products', {
+    method: 'POST',
+    headers: {
+      'apikey': SUPA_KEY,
+      'Authorization': 'Bearer ' + SUPA_KEY,
+      'Content-Type': 'application/json',
+      'Prefer': 'resolution=merge-duplicates,return=minimal'
+    },
+    body: JSON.stringify(products)
+  }).then(function(r) {
+    if (!r.ok) throw new Error('Save failed');
+    showSave('saved');
+    document.getElementById('lastUpdate').textContent = 'Son güncelleme: ' + new Date().toLocaleString('tr-TR');
+  }).catch(function(e) {
+    console.error('Bulk save error:', e);
+    showSave('err');
+  });
 }
 
 function showSave(s) {
