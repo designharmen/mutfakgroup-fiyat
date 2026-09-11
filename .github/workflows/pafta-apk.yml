@@ -1,0 +1,77 @@
+# PAFTA'yı kurulabilir bir uygulama dosyası (APK) haline getirir.
+#
+# Bu dosya, GitHub'ın kendi bilgisayarlarında çalışır. Orada Android araçları
+# hazır kurulu olduğu için, geliştirme ortamında yapılamayan derleme burada
+# yapılabiliyor. Sonuçta çıkan APK, GitHub sayfasından indirilebilir hale gelir.
+#
+# Builds PAFTA into an installable APK on GitHub's runners, which have the
+# Android SDK preinstalled — the step the development container cannot perform.
+
+name: PAFTA APK
+
+on:
+  push:
+    branches:
+      - "claude/**"
+      - main
+    paths:
+      - "pafta/**"
+      - ".github/workflows/pafta-apk.yml"
+  # "Run workflow" düğmesiyle elle de başlatılabilir.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Derle ve APK üret
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Kaynak kodu al
+        uses: actions/checkout@v4
+
+      - name: Java kur
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Gradle hazırla
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Android araçlarını hazırla
+        uses: android-actions/setup-android@v3
+        with:
+          packages: "platforms;android-35 build-tools;35.0.0"
+
+      # Önce saf Kotlin çekirdeğinin testleri. Bunlar Android gerektirmez, bu
+      # yüzden bir hata varsa APK'yi beklemeden burada görülür.
+      - name: Çekirdek testleri
+        working-directory: pafta
+        run: ./gradlew -PpaftaCoreOnly=true test --console=plain
+
+      # Asıl sınav: Android tarafı gerçekten derleniyor mu?
+      - name: APK derle
+        working-directory: pafta
+        run: ./gradlew assembleDebug --console=plain --stacktrace
+
+      - name: APK'yi yükle
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: PAFTA-apk
+          path: pafta/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      # Test raporları, derleme başarısız olsa bile işe yarar.
+      - name: Test raporlarını yükle
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-raporlari
+          path: pafta/core/*/build/reports/tests/test
+          if-no-files-found: ignore
+          retention-days: 7
