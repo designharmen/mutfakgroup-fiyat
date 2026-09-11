@@ -59,9 +59,48 @@ jobs:
         run: ./gradlew -PpaftaCoreOnly=true test --console=plain
 
       # Asıl sınav: Android tarafı gerçekten derleniyor mu?
+      #
+      # Çıktı bir dosyaya da yazılıyor; hata olursa bir sonraki adım yalnızca
+      # hata satırlarını, günlüğün en sonunda, okunabilir biçimde yazdırıyor.
+      # (`--stacktrace` bilerek yok: yüzlerce satır teknik iz, hatanın kendisini
+      # görünmez yapıyordu.)
       - name: APK derle
         working-directory: pafta
-        run: ./gradlew assembleDebug --console=plain --stacktrace
+        run: |
+          set -o pipefail
+          ./gradlew assembleDebug --console=plain 2>&1 | tee "${RUNNER_TEMP}/build.log"
+
+      # Hata özeti: günlüğün sonunda, sadece işe yarayan satırlar.
+      - name: Derleme hatalarını özetle
+        if: failure()
+        run: |
+          log="${RUNNER_TEMP}/build.log"
+          if [ ! -f "$log" ]; then
+            echo "(derleme günlüğü yok — hata derlemeden önce oluştu)"
+            exit 0
+          fi
+
+          summary="${RUNNER_TEMP}/errors.txt"
+          grep -E '^e: |^w: |error:|warning:|^> Task .* FAILED|What went wrong|Execution failed|Caused by: [A-Za-z]' "$log" \
+            | grep -v 'See log for more details' \
+            | head -n 120 > "$summary" || true
+
+          echo "===== DERLEME HATALARI ====="
+          if [ -s "$summary" ]; then
+            cat "$summary"
+          else
+            echo "(eşleşen hata satırı yok; son 40 satır:)"
+            tail -n 40 "$log"
+          fi
+          echo "===== SON ====="
+
+          # Aynı özeti GitHub'ın iş özeti sayfasına da koy.
+          {
+            echo "## Derleme hataları"
+            echo '```'
+            cat "$summary" 2>/dev/null || echo "(yok)"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: APK'yi yükle
         if: success()
