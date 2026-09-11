@@ -46,7 +46,13 @@ jobs:
         with:
           packages: "platforms;android-35 build-tools;35.0.0"
 
-      # Önce saf Kotlin çekirdeğinin testleri. Bunlar Android gerektirmez, bu
+      # Türkçe metin dosyasının denetimi. Saniyeler sürer ve Android'in kaynak
+      # derleyicisinin dört dakika sonra bulacağı hataları hemen yakalar.
+      - name: Türkçe metinleri denetle
+        working-directory: pafta
+        run: python3 tools/check-strings.py
+
+      # Sonra saf Kotlin çekirdeğinin testleri. Bunlar Android gerektirmez, bu
       # yüzden bir hata varsa APK'yi beklemeden burada görülür.
       - name: Çekirdek testleri
         working-directory: pafta
